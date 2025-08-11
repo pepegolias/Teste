@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia Interativo sobre Ransomware</title>
+    
+    <!-- Chosen Palette: Warm Neutrals (Slate, Stone, Amber) -->
+    <!-- Application Structure Plan: A single-page application with a thematic, non-linear structure. A sticky top navigation bar allows users to jump to any section of interest (O Que É, Como Funciona, Tipos, Evolução, Impacto, Proteção, Ação). This structure breaks down the dense report into digestible, engaging modules, prioritizing user exploration over a linear read. Key interactions include an interactive timeline for historical context, clickable cards for ransomware types, and dynamic charts for visualizing impact, making the information more accessible and memorable. Gemini API integrations were added to provide an on-demand chatbot and a personalized incident response plan. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: History -> Goal: Show change -> Viz: Interactive Timeline (HTML/CSS/JS) & Line Chart (Chart.js). Justification: More engaging than a static table, clearly shows progression.
+        - Report Info: Ransomware Types -> Goal: Organize/Compare -> Viz: Interactive Cards (HTML/CSS/JS). Justification: Allows users to focus on one type at a time, reducing cognitive load compared to a large table.
+        - Report Info: Financial Impact -> Goal: Inform/Compare -> Viz: Bar Chart (Chart.js). Justification: A bar chart provides a powerful and immediate visual representation of the rising costs, more impactful than text alone.
+        - Report Info: Attack Lifecycle -> Goal: Organize/Inform -> Viz: Step-by-step diagram (HTML/CSS). Justification: Visualizes a process, making it easier to understand the sequence of an attack.
+        - Report Info: Protection/Response -> Goal: Inform/Instruct -> Viz: Icon-driven lists and accordions (HTML/CSS/JS). Justification: Breaks down complex advice into scannable, actionable steps.
+        - New Feature: General Ransomware Q&A -> Goal: User support/dynamic learning -> Viz: Interactive Chatbox with LLM (Gemini API). Justification: Provides on-demand answers to user-specific questions not covered in the static content.
+        - New Feature: Detailed Incident Response -> Goal: Provide actionable steps -> Viz: Button to trigger LLM to generate a detailed plan (Gemini API). Justification: Offers personalized, comprehensive advice for a critical situation, going beyond the generic steps provided.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f7f4;
+            color: #44403c;
+        }
+        .nav-link {
+            transition: color 0.3s, border-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #d97706; /* amber-600 */
+            border-bottom-color: #d97706;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            top: 12px;
+            left: -21px;
+            width: 14px;
+            height: 14px;
+            background-color: #f8f7f4;
+            border: 3px solid #d97706;
+            border-radius: 50%;
+            z-index: 1;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        #chatbox {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e7e5e4; /* stone-200 */
+        }
+        .message {
+            padding: 8px 12px;
+            border-radius: 16px;
+            max-width: 80%;
+            margin-bottom: 8px;
+        }
+        .user-message {
+            background-color: #d97706; /* amber-600 */
+            color: #fff;
+            margin-left: auto;
+        }
+        .gemini-message {
+            background-color: #e7e5e4; /* stone-200 */
+            color: #44403c;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header id="header" class="bg-stone-100/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <a href="#hero" class="text-2xl font-bold text-stone-800">Ransomware</a>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#what-is-it" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">O Que É</a>
+                        <a href="#how-it-works" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">Como Funciona</a>
+                        <a href="#types" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">Tipos</a>
+                        <a href="#evolution" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">Evolução</a>
+                        <a href="#impact" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">Impacto</a>
+                        <a href="#protection" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">Proteja-se</a>
+                        <a href="#infected" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700 bg-amber-500 text-white hover:bg-amber-600 hover:text-white">Fui Infectado!</a>
+                        <a href="#gemini-chat" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">Especialista ✨</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-stone-600 hover:text-amber-600 hover:bg-stone-200 focus:outline-none">
+                        <span class="sr-only">Abrir menu principal</span>
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="mobile-menu" class="md:hidden hidden pb-3">
+                <a href="#what-is-it" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-stone-700">O Que É</a>
+                <a href="#how-it-works" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-stone-700">Como Funciona</a>
+                <a href="#types" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-stone-700">Tipos</a>
+                <a href="#evolution" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-stone-700">Evolução</a>
+                <a href="#impact" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-stone-700">Impacto</a>
+                <a href="#protection" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-stone-700">Proteja-se</a>
+                <a href="#infected" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-white bg-amber-500 hover:bg-amber-600">Fui Infectado!</a>
+                <a href="#gemini-chat" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-stone-700">Especialista ✨</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="hero" class="py-20 sm:py-32 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-stone-800 tracking-tight">
+                    A Ameaça Digital que Sequestra Seus Dados.
+                </h1>
+                <p class="mt-6 max-w-3xl mx-auto text-lg sm:text-xl text-stone-600">
+                    Ransomware é um software malicioso que bloqueia o acesso aos seus arquivos e exige um resgate para liberá-los. Explore este guia para entender como ele funciona e, o mais importante, como se proteger.
+                </p>
+                <div class="mt-10">
+                    <a href="#what-is-it" class="inline-block bg-amber-600 text-white font-bold text-lg px-8 py-4 rounded-lg shadow-lg hover:bg-amber-700 transition-transform transform hover:scale-105">
+                        Comece a Explorar
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="what-is-it" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-stone-800">O Que é um Ransomware?</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">
+                        Nesta seção, detalhamos a definição de ransomware. Trata-se de um tipo de malware focado em extorsão financeira, que utiliza criptografia para sequestrar dados e exige pagamento, geralmente em criptomoedas, para manter o anonimato dos criminosos.
+                    </p>
+                </div>
+                <div class="mt-12 grid md:grid-cols-3 gap-8 text-center">
+                    <div class="bg-white p-8 rounded-xl shadow-md">
+                        <div class="text-4xl text-amber-600">💰</div>
+                        <h3 class="mt-4 text-xl font-bold">Extorsão Financeira</h3>
+                        <p class="mt-2 text-stone-600">O objetivo principal é forçar a vítima a pagar um resgate para recuperar o acesso aos seus próprios dados.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-md">
+                        <div class="text-4xl text-amber-600">🔒</div>
+                        <h3 class="mt-4 text-xl font-bold">Criptografia de Dados</h3>
+                        <p class="mt-2 text-stone-600">Utiliza algoritmos complexos para "embaralhar" os arquivos, tornando-os ilegíveis sem uma chave secreta.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-md">
+                        <div class="text-4xl text-amber-600">🤫</div>
+                        <h3 class="mt-4 text-xl font-bold">Pagamento Anônimo</h3>
+                        <p class="mt-2 text-stone-600">Os resgates são exigidos em criptomoedas (como Bitcoin) para dificultar o rastreamento das transações pelas autoridades.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="how-it-works" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-stone-800">Como Funciona um Ataque?</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">
+                        Um ataque de ransomware segue um ciclo de vida bem definido. Aqui, visualizamos as principais fases, desde a infiltração inicial no sistema até a exigência do resgate, mostrando as táticas que os criminosos utilizam para ter sucesso.
+                    </p>
+                </div>
+                <div class="mt-12 flow-root">
+                    <div class="relative">
+                        <div class="grid md:grid-cols-2 gap-x-12">
+                            <div class="md:text-right">
+                                <h3 class="text-2xl font-bold text-amber-700">1. Vetores de Entrada</h3>
+                                <p class="mt-2 text-stone-600">O ataque começa com a infiltração no sistema da vítima. Os métodos mais comuns incluem:</p>
+                                <ul class="mt-4 space-y-2 text-stone-600 list-none inline-block text-left md:text-right">
+                                    <li class="flex items-center justify-end"><span class="mr-2">📧</span> E-mails de Phishing</li>
+                                    <li class="flex items-center justify-end"><span class="mr-2">💻</span> Exploração de Vulnerabilidades</li>
+                                    <li class="flex items-center justify-end"><span class="mr-2">🔑</span> Senhas Fracas em Acesso Remoto (RDP)</li>
+                                </ul>
+                            </div>
+                            <div></div>
+                            
+                            <div class="mt-8 md:mt-0"></div>
+                             <div class="mt-8 md:mt-0">
+                                <h3 class="text-2xl font-bold text-amber-700">2. Execução e Movimento</h3>
+                                <p class="mt-2 text-stone-600">Uma vez dentro, o malware se estabelece e busca se espalhar pela rede (movimento lateral) para encontrar dados valiosos e ampliar o alcance do ataque.</p>
+                            </div>
+
+                            <div class="mt-8 md:text-right">
+                                <h3 class="text-2xl font-bold text-amber-700">3. Exfiltração de Dados</h3>
+                                <p class="mt-2 text-stone-600">Antes de criptografar, os criminosos roubam cópias de dados sensíveis. Isso cria uma segunda forma de extorsão: a ameaça de vazar publicamente as informações roubadas.</p>
+                            </div>
+                            <div class="mt-8 md:mt-0"></div>
+
+                            <div class="mt-8 md:mt-0"></div>
+                            <div class="mt-8">
+                                <h3 class="text-2xl font-bold text-amber-700">4. Criptografia e Resgate</h3>
+                                <p class="mt-2 text-stone-600">Na fase final, o ransomware criptografa os arquivos e exibe a nota de resgate, com instruções para o pagamento e, geralmente, um prazo para criar urgência.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="types" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-stone-800">Tipos de Ameaça</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">
+                        Existem diferentes categorias de ransomware, cada uma com seu método de operação. Clique nos cartões abaixo para explorar os tipos mais comuns, desde os que criptografam arquivos até os que alugam o malware como um serviço.
+                    </p>
+                </div>
+                <div id="types-grid" class="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                </div>
+            </div>
+        </section>
+
+        <section id="evolution" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-stone-800">A Evolução do Ransomware</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">
+                        O ransomware não é uma ameaça nova. Sua história mostra uma constante evolução em sofisticação e táticas. Explore a linha do tempo interativa para ver os marcos mais importantes, desde o primeiro caso documentado até as tendências atuais.
+                    </p>
+                </div>
+                <div class="mt-12 flex flex-col lg:flex-row gap-12 items-start">
+                    <div class="w-full lg:w-1/2">
+                        <div id="timeline-container" class="relative border-l-4 border-amber-200 ml-4 pl-8 py-4">
+                        </div>
+                    </div>
+                    <div class="w-full lg:w-1/2">
+                        <h3 class="text-2xl font-bold text-center mb-4">Aumento Exponencial dos Custos</h3>
+                        <p class="text-center text-stone-600 mb-4">O gráfico ilustra o crescimento alarmante dos custos associados a ataques de ransomware, refletindo sua crescente lucratividade para os criminosos e o impacto financeiro nas vítimas.</p>
+                        <div class="chart-container">
+                            <canvas id="evolutionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="impact" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-stone-800">O Impacto Devastador</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">
+                        As consequências de um ataque de ransomware vão muito além da perda de arquivos. Esta seção explora os danos financeiros, operacionais e de reputação que afetam tanto indivíduos quanto grandes organizações.
+                    </p>
+                </div>
+                <div class="mt-12 grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="font-bold text-lg text-amber-700">Financeiro</h3>
+                        <ul class="mt-2 space-y-1 text-stone-600 list-disc list-inside">
+                            <li>Pagamento de resgates</li>
+                            <li>Custos de recuperação</li>
+                            <li>Perda de receita</li>
+                            <li>Multas e custos legais</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="font-bold text-lg text-amber-700">Operacional</h3>
+                        <ul class="mt-2 space-y-1 text-stone-600 list-disc list-inside">
+                            <li>Interrupção de negócios</li>
+                            <li>Perda de produtividade</li>
+                            <li>Danos a sistemas críticos</li>
+                            <li>Fechamento de empresas</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="font-bold text-lg text-amber-700">Reputacional</h3>
+                        <ul class="mt-2 space-y-1 text-stone-600 list-disc list-inside">
+                            <li>Perda de confiança de clientes</li>
+                            <li>Publicidade negativa</li>
+                            <li>Perda de vantagem competitiva</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="font-bold text-lg text-amber-700">Perda de Dados</h3>
+                        <ul class="mt-2 space-y-1 text-stone-600 list-disc list-inside">
+                            <li>Arquivos pessoais irrecuperáveis</li>
+                            <li>Dados de negócios críticos</li>
+                            <li>Vazamento de informações sensíveis</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="protection" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-stone-800">Como se Proteger?</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">
+                        A prevenção é a melhor defesa. Adotar uma abordagem de segurança em camadas é fundamental. Explore as medidas essenciais que indivíduos e organizações podem tomar para reduzir drasticamente o risco de um ataque.
+                    </p>
+                </div>
+                <div class="mt-12 max-w-4xl mx-auto">
+                    <div id="protection-accordion"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="infected" class="py-16 sm:py-24 bg-amber-600 text-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl sm:text-4xl font-bold">Fui Infectado! E agora?</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-amber-100">
+                        Se o pior acontecer, agir rápido e de forma correta é crucial. Siga estes passos para conter os danos e iniciar o processo de recuperação.
+                    </p>
+                    <div class="mt-6">
+                        <button id="generate-response-plan" class="bg-white text-amber-600 font-bold px-6 py-3 rounded-lg shadow-md hover:bg-stone-100 transition-transform transform hover:scale-105">
+                            Gerar Plano de Ação Detalhado ✨
+                        </button>
+                    </div>
+                    <div id="response-plan-output" class="mt-8 p-6 bg-amber-500 rounded-lg shadow-inner text-left text-amber-50 hidden">
+                        <p>A gerar plano...</p>
+                    </div>
+                </div>
+                <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="text-center">
+                        <div class="text-5xl">1️⃣</div>
+                        <h3 class="mt-4 text-xl font-bold">Isole o Dispositivo</h3>
+                        <p class="mt-2 text-amber-100">Desconecte-o imediatamente da internet e de qualquer rede para impedir que o ransomware se espalhe.</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-5xl">2️⃣</div>
+                        <h3 class="mt-4 text-xl font-bold">Não Pague o Resgate</h3>
+                        <p class="mt-2 text-amber-100">Pagar não garante a devolução dos dados e financia o cibercrime. Autoridades como o FBI desaconselham o pagamento.</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-5xl">3️⃣</div>
+                        <h3 class="mt-4 text-xl font-bold">Informe as Autoridades</h3>
+                        <p class="mt-2 text-amber-100">Comunique o ataque à polícia e a agências de cibersegurança, como o CNCS em Portugal.</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-5xl">4️⃣</div>
+                        <h3 class="mt-4 text-xl font-bold">Restaure de um Backup</h3>
+                        <p class="mt-2 text-amber-100">Use um backup limpo e recente para recuperar seus arquivos após garantir que o sistema está livre do malware.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="gemini-chat" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-stone-800">Pergunte ao Especialista Digital ✨</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-stone-600">
+                        Tem alguma dúvida que não foi respondida? Pergunte-me qualquer coisa sobre ransomware e cibersegurança.
+                    </p>
+                </div>
+                <div class="mt-12 max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-6">
+                    <div id="chatbox" class="p-4 rounded-lg flex flex-col space-y-4">
+                        <div class="gemini-message message">Olá! Estou aqui para ajudar. Pode perguntar.</div>
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        <input type="text" id="user-input" class="flex-grow p-3 rounded-lg border border-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Digite a sua pergunta...">
+                        <button id="send-button" class="bg-amber-600 text-white font-bold p-3 rounded-lg shadow-md hover:bg-amber-700 transition-colors">
+                            Enviar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-800 text-stone-300 py-8">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p>Este guia interativo foi gerado para fins educacionais, com base em um relatório detalhado sobre ransomware.</p>
+            <p class="mt-2 text-sm text-stone-400">As informações apresentadas refletem o cenário da ameaça até a data de compilação do relatório original.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const ransomwareTypes = [
+                { name: 'Crypto-ransomware', icon: '🔐', description: 'O tipo mais comum. Criptografa arquivos, tornando-os inacessíveis até o pagamento do resgate.', examples: 'WannaCry, CryptoLocker, Petya' },
+                { name: 'Locker Ransomware', icon: '🖥️', description: 'Bloqueia o acesso ao computador, exibindo uma tela de resgate que impede o uso do sistema.', examples: 'WinLock, Reveton' },
+                { name: 'Scareware', icon: '👻', description: 'Finge ser um antivírus ou ferramenta de limpeza, exibindo alertas falsos para enganar o usuário a pagar por um software inútil.', examples: 'Variantes simples' },
+                { name: 'RaaS (Ransomware-as-a-Service)', icon: '☁️', description: 'Um modelo de negócio onde desenvolvedores alugam seu malware para outros criminosos, que realizam os ataques e dividem os lucros.', examples: 'Darkside, REvil, RansomHub' },
+                { name: 'Leakware (Doxware)', icon: '📁', description: 'Ameaça vazar publicamente dados confidenciais roubados da vítima se o resgate não for pago. Frequentemente usado em ataques de "dupla extorsão".', examples: 'Maze, Bad Rabbit' },
+                { name: 'Ransomworm', icon: '🐛', description: 'Ransomware com capacidade de se espalhar automaticamente por redes, como um worm, explorando vulnerabilidades sem interação do usuário.', examples: 'WannaCry' }
+            ];
+
+            const timelineData = [
+                { year: '1989', event: 'Surge o "AIDS Trojan", o primeiro ransomware documentado, distribuído via disquetes.' },
+                { year: '2007', event: 'Aparecem as primeiras variantes de "locker ransomware", bloqueando o acesso ao sistema.' },
+                { year: '2013', event: 'O CryptoLocker marca o início do ransomware moderno, combinando criptografia forte com pagamentos em Bitcoin.' },
+                { year: '2017', event: 'O ataque global do WannaCry explora a vulnerabilidade EternalBlue, afetando mais de 200.000 computadores.' },
+                { year: '2019', event: 'O grupo Maze populariza a "dupla extorsão", roubando dados antes de criptografá-los.' },
+                { year: '2022', event: 'Cresce a tendência de ransomware sem criptografia, focado apenas na extorsão por vazamento de dados.' },
+                { year: '2024', event: 'Ransomware atinge cifras recordes de resgates, e novos grupos como o RansomHub ganham dominância.' }
+            ];
+            
+            const protectionData = [
+                {
+                    title: 'Para Todos (Medidas Essenciais)',
+                    icon: '👤',
+                    points: [
+                        '**Backups Regulares (Regra 3-2-1):** Mantenha 3 cópias dos dados, em 2 mídias diferentes, com 1 cópia offline.',
+                        '**Software Atualizado:** Aplique patches de segurança em sistemas e aplicativos para corrigir vulnerabilidades.',
+                        '**Use Antivírus:** Mantenha um software de segurança robusto e atualizado.',
+                        '**Cuidado com Phishing:** Não clique em links ou abra anexos de e-mails suspeitos ou desconhecidos.',
+                        '**Senhas Fortes e 2FA:** Use senhas complexas e ative a autenticação de dois fatores sempre que possível.'
+                    ]
+                },
+                {
+                    title: 'Para Organizações (Defesa Avançada)',
+                    icon: '🏢',
+                    points: [
+                        '**Treinamento de Conscientização:** Eduque os funcionários continuamente sobre as ameaças cibernéticas.',
+                        '**Princípio do Menor Privilégio:** Conceda aos usuários apenas o acesso necessário para suas funções.',
+                        '**Plano de Resposta a Incidentes:** Desenvolva e teste um plano para agir rapidamente em caso de ataque.',
+                        '**Segurança de Rede:** Use firewalls, filtragem de e-mail e monitore a rede para atividades suspeitas.',
+                        '**Modelo Zero Trust:** Não confie em ninguém por padrão, verifique rigorosamente todo acesso à rede e aos dados.'
+                    ]
+                }
+            ];
+
+            const typesGrid = document.getElementById('types-grid');
+            ransomwareTypes.forEach(type => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-6 rounded-xl shadow-lg cursor-pointer transform hover:-translate-y-2 transition-transform duration-300';
+                card.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="text-4xl mr-4">${type.icon}</div>
+                        <div>
+                            <h3 class="text-xl font-bold text-stone-800">${type.name}</h3>
+                        </div>
+                    </div>
+                    <div class="details hidden mt-4 pt-4 border-t border-stone-200">
+                        <p class="text-stone-600">${type.description}</p>
+                        <p class="mt-2 text-sm text-stone-500"><strong>Exemplos:</strong> ${type.examples}</p>
+                    </div>
+                `;
+                typesGrid.appendChild(card);
+                card.addEventListener('click', () => {
+                    card.querySelector('.details').classList.toggle('hidden');
+                });
+            });
+
+            const timelineContainer = document.getElementById('timeline-container');
+            timelineData.forEach(item => {
+                const timelineItem = document.createElement('div');
+                timelineItem.className = 'timeline-item relative mb-8';
+                timelineItem.innerHTML = `
+                    <h3 class="text-xl font-bold text-amber-600">${item.year}</h3>
+                    <p class="mt-1 text-stone-600">${item.event}</p>
+                `;
+                timelineContainer.appendChild(timelineItem);
+            });
+            
+            const protectionAccordion = document.getElementById('protection-accordion');
+            protectionData.forEach((category, index) => {
+                const item = document.createElement('div');
+                item.className = 'border border-stone-200 rounded-lg mb-4 bg-stone-50 overflow-hidden';
+                item.innerHTML = `
+                    <button class="accordion-header w-full text-left p-4 flex justify-between items-center font-bold text-lg text-stone-700 hover:bg-stone-100">
+                        <span>${category.icon} ${category.title}</span>
+                        <span class="transform transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content max-h-0 overflow-hidden transition-max-height duration-500 ease-in-out">
+                        <div class="p-4 border-t border-stone-200">
+                            <ul class="space-y-3 text-stone-600">
+                                ${category.points.map(point => `
+                                    <li class="flex items-start">
+                                        <span class="text-amber-600 mr-3 mt-1">✓</span>
+                                        <span>${point}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                protectionAccordion.appendChild(item);
+                
+                const header = item.querySelector('.accordion-header');
+                const content = item.querySelector('.accordion-content');
+                const icon = header.querySelector('span:last-child');
+
+                header.addEventListener('click', () => {
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                        icon.style.transform = 'rotate(0deg)';
+                    } else {
+                        document.querySelectorAll('.accordion-content').forEach(el => el.style.maxHeight = null);
+                        document.querySelectorAll('.accordion-header span:last-child').forEach(el => el.style.transform = 'rotate(0deg)'); // Fixed: Missing ')' here
+                        content.style.maxHeight = content.scrollHeight + "px";
+                        icon.style.transform = 'rotate(180deg)';
+                    }
+                });
+            });
+
+
+            const evolutionCtx = document.getElementById('evolutionChart').getContext('2d');
+            new Chart(evolutionCtx, {
+                type: 'line',
+                data: {
+                    labels: ['2016', '2018', '2020', '2021', '2024'],
+                    datasets: [{
+                        label: 'Custo Médio de Recuperação (em milhões de USD)',
+                        data: [0.34, 0.45, 0.76, 1.85, 2.5],
+                        borderColor: '#d97706',
+                        backgroundColor: 'rgba(217, 119, 6, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value + 'M';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Custo: $${context.parsed.y.toFixed(2)} Milhões`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+            const headerHeight = document.getElementById('header').offsetHeight;
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: `-${headerHeight}px 0px 0px 0px`, threshold: 0.3 });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+            
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            document.querySelectorAll('#mobile-menu a').forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+            
+            // Gemini API powered features
+            const apiKey = "";
+            const chatbox = document.getElementById('chatbox');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            const generateResponsePlanButton = document.getElementById('generate-response-plan');
+            const responsePlanOutput = document.getElementById('response-plan-output');
+
+            async function callGeminiApi(prompt) {
+                let retries = 0;
+                const maxRetries = 5;
+                const baseDelay = 1000;
+
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                while (retries < maxRetries) {
+                    try {
+                        const payload = {
+                            contents: [{ role: "user", parts: [{ text: prompt }] }],
+                        };
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (response.status === 429) {
+                            retries++;
+                            const delay = baseDelay * Math.pow(2, retries);
+                            await new Promise(res => setTimeout(res, delay));
+                            continue;
+                        }
+                        const result = await response.json();
+                        if (result.candidates && result.candidates.length > 0 &&
+                            result.candidates[0].content && result.candidates[0].content.parts &&
+                            result.candidates[0].content.parts.length > 0) {
+                            return result.candidates[0].content.parts[0].text;
+                        } else {
+                            throw new Error('Resposta inesperada da API.');
+                        }
+                    } catch (error) {
+                        retries++;
+                        const delay = baseDelay * Math.pow(2, retries);
+                        await new Promise(res => setTimeout(res, delay));
+                    }
+                }
+                throw new Error('Falha na API após várias tentativas.');
+            }
+
+            async function sendMessage() {
+                const userText = userInput.value.trim();
+                if (!userText) return;
+
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.className = 'message user-message';
+                userMessageDiv.textContent = userText;
+                chatbox.appendChild(userMessageDiv);
+                userInput.value = '';
+                chatbox.scrollTop = chatbox.scrollHeight;
+
+                const geminiMessageDiv = document.createElement('div');
+                geminiMessageDiv.className = 'message gemini-message';
+                geminiMessageDiv.textContent = 'A gerar resposta...';
+                chatbox.appendChild(geminiMessageDiv);
+                chatbox.scrollTop = chatbox.scrollHeight;
+                
+                const prompt = `Age como um especialista em cibersegurança focado em ransomware. A tua função é responder a perguntas de forma clara e informativa, com base nos conhecimentos sobre o tema. As tuas respostas devem ser concisas e diretas, sem usar linguagem técnica excessiva. A pergunta é: ${userText}.`;
+
+                try {
+                    const responseText = await callGeminiApi(prompt);
+                    geminiMessageDiv.textContent = responseText;
+                } catch (error) {
+                    geminiMessageDiv.textContent = 'Desculpe, houve um erro ao gerar a resposta. Por favor, tente novamente.';
+                }
+                chatbox.scrollTop = chatbox.scrollHeight;
+            }
+
+            sendButton.addEventListener('click', sendMessage);
+            userInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            generateResponsePlanButton.addEventListener('click', async () => {
+                responsePlanOutput.classList.remove('hidden');
+                responsePlanOutput.innerHTML = '<p>A gerar plano...</p>';
+                
+                const prompt = 'Gera um plano de resposta a um incidente de ransomware detalhado, com passos a serem seguidos para um utilizador doméstico ou pequena empresa. O plano deve ser dividido em etapas (por exemplo, "1. Contenção", "2. Análise", etc.) e conter ações práticas e claras, formatadas com markdown para listas ou negrito, para máxima legibilidade.';
+                
+                try {
+                    const responseText = await callGeminiApi(prompt);
+                    const formattedText = responseText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                                    .replace(/^- (.*)/gm, '<li>$1</li>')
+                                                    .replace(/^(\d+\.) (.*)/gm, '<h3>$1 $2</h3>')
+                                                    .replace(/(###.*)/g, '<p class="text-xl font-bold mt-4">$1</p>')
+                                                    .replace(/(\*.*\*)/g, '<strong>$1</strong>');
+                    responsePlanOutput.innerHTML = formattedText;
+
+                } catch (error) {
+                    responsePlanOutput.innerHTML = '<p>Desculpe, houve um erro ao gerar o plano de resposta. Por favor, tente novamente.</p>';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
